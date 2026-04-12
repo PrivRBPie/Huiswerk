@@ -26,6 +26,53 @@ const bringDownInput = document.getElementById('bring-down');
 
 const difficultyEl = document.getElementById('difficulty');
 const guidanceEl = document.getElementById('guidance');
+const classicDivisorEl = document.getElementById('classic-divisor');
+const classicDividendEl = document.getElementById('classic-dividend');
+const classicQuotientEl = document.getElementById('classic-quotient');
+const classicStepsEl = document.getElementById('classic-steps');
+
+
+function buildClassicSteps(dividend, divisor) {
+  const digits = String(dividend).split('').map(Number);
+  const quotient = Math.floor(dividend / divisor).toString();
+  let remainder = 0;
+  let started = false;
+  const lines = [];
+
+  for (let i = 0; i < digits.length; i += 1) {
+    const current = remainder * 10 + digits[i];
+    const qDigit = Math.floor(current / divisor);
+
+    if (qDigit > 0 || started || i === digits.length - 1) {
+      started = true;
+      const product = qDigit * divisor;
+      const currentStr = String(current);
+      const productStr = String(product);
+      const indent = ' '.repeat(Math.max(0, i + 1));
+      lines.push(`${indent}${productStr}`);
+      lines.push(`${indent}${'-'.repeat(Math.max(currentStr.length, productStr.length))}`);
+      remainder = current - product;
+
+      if (i < digits.length - 1) {
+        lines.push(`${indent}${remainder}${digits[i + 1]}`);
+      } else {
+        lines.push(`${indent}${remainder}`);
+      }
+    } else {
+      remainder = current;
+    }
+  }
+
+  return { quotient, lines: lines.join('\n') };
+}
+
+function renderClassicDivision() {
+  const { quotient, lines } = buildClassicSteps(state.dividend, state.divisor);
+  classicDivisorEl.textContent = String(state.divisor);
+  classicDividendEl.textContent = String(state.dividend);
+  classicQuotientEl.textContent = quotient;
+  classicStepsEl.textContent = lines;
+}
 
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -102,6 +149,7 @@ function startProblem() {
   setFeedback('Nieuwe som gestart. Begin met de eerste stap!', 'ok');
   resetStepFields();
   updatePrompt();
+  renderClassicDivision();
 }
 
 function checkStep() {
@@ -161,6 +209,7 @@ function checkStep() {
   setFeedback('Top! Deze stap klopt.', 'ok');
   resetStepFields();
   updatePrompt();
+  renderClassicDivision();
 }
 
 function showHint() {
@@ -227,6 +276,7 @@ document.getElementById('hint').addEventListener('click', showHint);
 guidanceEl.addEventListener('change', () => {
   state.guidance = Number(guidanceEl.value);
   updatePrompt();
+  renderClassicDivision();
 });
 
 setupKeypad();
