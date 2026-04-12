@@ -1,8 +1,6 @@
 name: Deploy static app to GitHub Pages
 
-on:
-  push:
-  workflow_dispatch:
+on: [push, workflow_dispatch]
 
 permissions:
   contents: read
@@ -44,4 +42,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Explain skip reason
-        run: echo "Skipping Pages deploy: branch is not main (environment protection)."
+        run: 'echo "Skipping Pages deploy: branch is not main (environment protection)."'
