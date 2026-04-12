@@ -12,10 +12,14 @@
   </head>
   <body>
     <main class="app">
-      <header class="card topbar">
+      <div class="bubble bubble-1" aria-hidden="true"></div>
+      <div class="bubble bubble-2" aria-hidden="true"></div>
+      <div class="bubble bubble-3" aria-hidden="true"></div>
+      <header class="card topbar sea">
         <div>
+          <p class="eyebrow">🌊 Onderwater Rekenmissie</p>
           <h1>Staartdeling Avontuur</h1>
-          <p class="subtitle">Klassieke staartdelingen oefenen (iPhone proof)</p>
+          <p class="subtitle">Speels oefenen met klassieke staartdelingen</p>
         </div>
         <button id="new-problem" class="primary">Nieuwe som</button>
       </header>
@@ -41,7 +45,10 @@
         </label>
       </section>
 
-      <section class="card board" aria-live="polite">
+      <section class="card board retro" aria-live="polite">
+        <div class="mascot">🐠</div>
+        <p class="coach">Snork zegt: stap voor stap!</p>
+
         <div class="division-layout">
           <div class="divisor" id="divisor">4</div>
           <div class="bar"></div>
@@ -80,6 +87,7 @@
       </section>
 
       <section class="card keypad" aria-label="Numeriek toetsenbord voor mobiel">
+        <p class="keypad-title">🔢 Sneltoetsen</p>
         <div class="keys" id="keys"></div>
       </section>
     </main>
