@@ -1,31 +1,31 @@
 :root {
-  --bg-top: #c2f4ff;
-  --bg-bottom: #f0fdff;
+  --bg: #f5f9ff;
   --card: #ffffff;
-  --text: #082f49;
-  --muted: #155e75;
+  --text: #0f172a;
+  --muted: #475569;
   --primary: #0284c7;
   --primary-dark: #0369a1;
   --ok: #166534;
   --warn: #b45309;
-  --radius: 18px;
-  --shadow: 0 8px 20px rgba(3, 105, 161, 0.12);
+  --radius: 14px;
+  --shadow: 0 6px 20px rgba(2, 132, 199, 0.08);
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
-  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-  background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(180deg, #ecfeff, var(--bg));
   color: var(--text);
-  min-height: 100dvh;
 }
 
 .app {
-  max-width: 920px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 16px 12px 30px;
+  padding: 16px 12px 28px;
   display: grid;
   gap: 12px;
 }
@@ -35,7 +35,6 @@ body {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 14px;
-  border: 2px solid #bae6fd;
 }
 
 .topbar {
@@ -45,26 +44,15 @@ body {
   align-items: center;
 }
 
-.topbar.sea {
-  background: radial-gradient(circle at 20% 20%, #ecfeff, #dbeafe);
-}
-
-.eyebrow {
-  margin: 0;
-  color: #0e7490;
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
 h1 {
-  font-size: 1.45rem;
-  margin: 2px 0 4px;
+  font-size: 1.3rem;
+  margin: 0 0 4px;
 }
 
 .subtitle {
   margin: 0;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .controls {
@@ -76,51 +64,42 @@ h1 {
 label {
   display: grid;
   gap: 6px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
-input, select, button {
+input,
+select,
+button {
   font-size: 1rem;
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
-input, select {
-  border: 2px solid #bae6fd;
+input,
+select {
+  border: 1px solid #cbd5e1;
   padding: 10px;
-  min-height: 46px;
-  background: #f8fdff;
+  min-height: 44px;
 }
 
 button {
   border: 0;
   padding: 10px 14px;
-  min-height: 46px;
-  font-weight: 800;
+  min-height: 44px;
+  font-weight: 700;
 }
 
 .primary {
-  background: linear-gradient(180deg, #0ea5e9, var(--primary));
+  background: var(--primary);
   color: white;
 }
 
-.primary:active { background: var(--primary-dark); }
+.primary:active {
+  background: var(--primary-dark);
+}
 
 .ghost {
   background: #e0f2fe;
   color: #075985;
-  border: 2px solid #7dd3fc;
-}
-
-.board {
-  position: relative;
-  overflow: hidden;
-}
-
-.mascot {
-  position: absolute;
-  right: 14px;
-  top: 10px;
-  font-size: 2rem;
 }
 
 .division-layout {
@@ -128,21 +107,20 @@ button {
   grid-template-columns: auto 8px auto auto;
   align-items: center;
   gap: 8px;
-  font-size: 2.25rem;
-  font-weight: 900;
+  font-size: 2rem;
+  font-weight: 800;
   justify-content: center;
-  margin-top: 10px;
 }
 
 .bar {
   width: 8px;
-  height: 62px;
-  border-left: 4px solid #0f172a;
-  border-top: 4px solid #0f172a;
+  height: 58px;
+  border-left: 3px solid #0f172a;
+  border-top: 3px solid #0f172a;
 }
 
 .quotient-right {
-  color: #9333ea;
+  color: #7c3aed;
   min-width: 56px;
   text-align: left;
 }
@@ -150,11 +128,10 @@ button {
 .prompt {
   margin-top: 10px;
   padding: 10px;
-  border-radius: 12px;
-  background: #ecfeff;
-  color: #083344;
-  border: 2px solid #a5f3fc;
-  font-weight: 700;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
 }
 
 .inputs {
@@ -168,23 +145,24 @@ button {
   margin-top: 12px;
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
-.feedback { margin: 12px 0 0; font-weight: 800; }
-.feedback.ok { color: var(--ok); }
-.feedback.warn { color: var(--warn); }
+.feedback {
+  margin: 12px 0 0;
+  font-weight: 700;
+}
+
+.feedback.ok {
+  color: var(--ok);
+}
+
+.feedback.warn {
+  color: var(--warn);
+}
 
 .progress {
   margin: 8px 0 0;
   color: var(--muted);
-  font-weight: 700;
-}
-
-.keypad-title {
-  margin: 0 0 8px;
-  font-weight: 800;
-  color: #0e7490;
 }
 
 .keys {
@@ -195,13 +173,18 @@ button {
 
 .key {
   font-size: 1.2rem;
-  min-height: 54px;
-  border: 2px solid #7dd3fc;
-  background: #f0f9ff;
+  min-height: 52px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
 }
 
 @media (max-width: 680px) {
-  .division-layout { font-size: 1.8rem; }
-  .topbar { flex-direction: column; align-items: stretch; }
-  .mascot { font-size: 1.65rem; }
+  .division-layout {
+    font-size: 1.7rem;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

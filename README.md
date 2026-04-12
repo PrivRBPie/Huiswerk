@@ -18,8 +18,6 @@ Als je op `https://<gebruikersnaam>.github.io/Huiswerk/` nog een 404 krijgt, con
 3. Open exact deze URL: `https://<gebruikersnaam>.github.io/Huiswerk/`.
 4. Wacht 1-3 minuten na een deploy (DNS/cache kan even duren).
 
-De deploy-workflow controleert nu automatisch of de live-URL bereikbaar is (met retries).
-
 ## Lokaal starten
 
 Open `index.html` direct in je browser, of start een simpele server:
@@ -29,8 +27,3 @@ python3 -m http.server 8000
 ```
 
 Daarna naar `http://localhost:8000`.
-
-
-## PR-opmerking
-
-Gebruik bij voorkeur een nieuwe PR vanaf de opgeschoonde `work` branch (single-commit) om merge-conflicts te minimaliseren.

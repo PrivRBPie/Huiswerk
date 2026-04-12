@@ -17,12 +17,10 @@ concurrency:
 jobs:
   deploy:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    outputs:
-      page_url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -41,23 +39,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-  verify:
-    if: github.ref == 'refs/heads/main'
-    needs: deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Verify deployed site is reachable
-        run: |
-          URL="${{ needs.deploy.outputs.page_url }}"
-          echo "Checking $URL"
-          for i in 1 2 3 4 5; do
-            if curl -fsSL "$URL" > /dev/null; then
-              echo "✅ Deployment is live: $URL"
-              exit 0
-            fi
-            echo "Attempt $i failed, retrying in 15s..."
-            sleep 15
-          done
-          echo "❌ Deployment URL is not reachable yet: $URL"
-          exit 1
