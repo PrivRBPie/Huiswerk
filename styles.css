@@ -269,7 +269,7 @@ button {
 }
 
 .division-layout {
-  display: none;
+  display: grid;
   grid-template-columns: auto 8px auto auto;
   grid-template-areas:
     "divisor bar dividend quotient"
