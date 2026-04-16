@@ -10,6 +10,8 @@ const state = {
   guidance: 2,
   hintsUsed: 0,
   totalCorrect: 0,
+  sheetRows: [],
+  currentRow: 0,
 };
 
 const divisorEl = document.getElementById('divisor');
@@ -26,18 +28,14 @@ const bringDownInput = document.getElementById('bring-down');
 
 const difficultyEl = document.getElementById('difficulty');
 const guidanceEl = document.getElementById('guidance');
-const classicDivisorEl = document.getElementById('classic-divisor');
-const classicDividendEl = document.getElementById('classic-dividend');
-const classicQuotientEl = document.getElementById('classic-quotient');
-const classicStepsEl = document.getElementById('classic-steps');
+const divisionSheetEl = document.getElementById('division-sheet');
 
 
 function buildClassicSteps(dividend, divisor) {
   const digits = String(dividend).split('').map(Number);
-  const quotient = Math.floor(dividend / divisor).toString();
   let remainder = 0;
   let started = false;
-  const lines = [];
+  const steps = [];
 
   for (let i = 0; i < digits.length; i += 1) {
     const current = remainder * 10 + digits[i];
@@ -46,32 +44,107 @@ function buildClassicSteps(dividend, divisor) {
     if (qDigit > 0 || started || i === digits.length - 1) {
       started = true;
       const product = qDigit * divisor;
-      const currentStr = String(current);
-      const productStr = String(product);
-      const indent = ' '.repeat(Math.max(0, i + 1));
-      lines.push(`${indent}${productStr}`);
-      lines.push(`${indent}${'-'.repeat(Math.max(currentStr.length, productStr.length))}`);
+      steps.push({
+        endIndex: i,
+        current,
+        product,
+      });
       remainder = current - product;
-
-      if (i < digits.length - 1) {
-        lines.push(`${indent}${remainder}${digits[i + 1]}`);
-      } else {
-        lines.push(`${indent}${remainder}`);
-      }
     } else {
       remainder = current;
     }
   }
 
-  return { quotient, lines: lines.join('\n') };
+  return {
+    digits,
+    quotient: Math.floor(dividend / divisor).toString(),
+    steps,
+    remainder,
+  };
+}
+
+function toWorkRow(value, endIndex, workCols) {
+  const row = Array(workCols).fill('');
+  String(value).split('').forEach((digit, idx, arr) => {
+    row[endIndex - (arr.length - 1 - idx)] = digit;
+  });
+  return row;
 }
 
 function renderClassicDivision() {
-  const { quotient, lines } = buildClassicSteps(state.dividend, state.divisor);
-  classicDivisorEl.textContent = String(state.divisor);
-  classicDividendEl.textContent = String(state.dividend);
-  classicQuotientEl.textContent = quotient;
-  classicStepsEl.textContent = lines;
+  const model = buildClassicSteps(state.dividend, state.divisor);
+  const quotientCols = Math.max(3, String(state.dividend).length + 1);
+  const workCols = model.digits.length;
+  const totalCols = 2 + workCols + 1 + quotientCols;
+
+  const rows = [];
+  const header = Array(totalCols).fill('');
+  header[0] = String(state.divisor);
+  header[1] = '/';
+  model.digits.forEach((digit, idx) => {
+    header[2 + idx] = String(digit);
+  });
+  header[2 + workCols] = '\\';
+  const qStart = 3 + workCols;
+  String(model.quotient).split('').forEach((digit, idx) => {
+    header[qStart + idx] = digit;
+  });
+  rows.push({ cells: header, work: false });
+
+  const expectedRows = [];
+  const renderedWorkRows = [];
+
+  model.steps.forEach((step, stepIndex) => {
+    if (stepIndex > 0) {
+      expectedRows.push(toWorkRow(step.current, step.endIndex, workCols));
+    }
+    expectedRows.push(toWorkRow(step.product, step.endIndex, workCols));
+  });
+  expectedRows.push(toWorkRow(model.remainder, model.digits.length - 1, workCols));
+
+  expectedRows.forEach((workRow, idx) => {
+    const row = Array(totalCols).fill('');
+    workRow.forEach((digit, col) => {
+      row[2 + col] = digit;
+    });
+    renderedWorkRows.push({ cells: row, work: true, rowIndex: idx });
+    if (idx < expectedRows.length - 1) {
+      renderedWorkRows.push({ cells: Array(totalCols).fill(''), work: true, separator: true });
+    }
+  });
+
+  rows.push(...renderedWorkRows);
+  state.sheetRows = expectedRows;
+
+  divisionSheetEl.innerHTML = rows
+    .map((row) => {
+      const cells = row.cells
+        .map((value, colIndex) => {
+          const isWorkCell = row.work && colIndex >= 2 && colIndex < 2 + workCols;
+          const className = isWorkCell ? 'work' : (value === '/' || value === '\\' ? 'symbol' : '');
+          if (!isWorkCell) {
+            return `<td class="${className}">${value}</td>`;
+          }
+
+          if (row.separator) {
+            return `<td class="${className}"></td>`;
+          }
+
+          const col = colIndex - 2;
+          const solved = row.rowIndex < state.currentRow;
+          const active = row.rowIndex === state.currentRow;
+          const userValue = solved ? state.sheetRows[row.rowIndex][col] : '';
+          return `<td class="${className}"><input class="sheet-input" data-row="${row.rowIndex}" data-col="${col}" maxlength="1" value="${userValue}" ${active ? '' : 'disabled'} /></td>`;
+        })
+        .join('');
+      return `<tr>${cells}</tr>`;
+    })
+    .join('');
+
+  const firstActive = divisionSheetEl.querySelector('input.sheet-input:not([disabled])');
+  if (firstActive) {
+    firstActive.focus();
+  }
 }
 
 function randomInt(min, max) {
@@ -93,7 +166,6 @@ function resetStepFields() {
   productInput.value = '';
   remainderStepInput.value = '';
   bringDownInput.value = '';
-  qDigitInput.focus();
 }
 
 function setFeedback(text, type = 'warn') {
@@ -102,33 +174,12 @@ function setFeedback(text, type = 'warn') {
 }
 
 function updatePrompt() {
-  const digits = String(state.dividend).split('').map(Number);
-  while (state.currentChunk < state.divisor && state.index < digits.length) {
-    state.currentChunk = state.currentChunk * 10 + digits[state.index];
-    state.index += 1;
-    if (state.quotient.length) {
-      state.quotient += '0';
-    }
-  }
-
-  if (state.index > digits.length && state.currentChunk < state.divisor) {
-    promptEl.textContent = `Klaar! Rest = ${state.currentChunk}`;
-    quotientEl.textContent = state.quotient || '0';
-    state.totalCorrect += 1;
-    progressEl.textContent = `✅ Opgeloste sommen: ${state.totalCorrect} | Gebruikte hints: ${state.hintsUsed}`;
-    setFeedback('Netjes! Tik op “Nieuwe som” voor de volgende.', 'ok');
+  if (state.currentRow >= state.sheetRows.length) {
+    promptEl.textContent = 'Klaar! Alle rijen zijn correct ingevuld.';
     return;
   }
 
-  state.expectedDigit = Math.floor(state.currentChunk / state.divisor);
-  const guidance = Number(guidanceEl.value);
-  state.guidance = guidance;
-
-  if (guidance <= 2) {
-    promptEl.textContent = `Werk met ${state.currentChunk}. Hoe vaak past ${state.divisor} hierin?`;
-  } else {
-    promptEl.textContent = 'Vul de volgende stap van de staartdeling in.';
-  }
+  promptEl.textContent = `Vul rij ${state.currentRow + 1} in en klik op “Controleer rij”.`;
 }
 
 function startProblem() {
@@ -141,6 +192,8 @@ function startProblem() {
     currentChunk: 0,
     expectedDigit: 0,
     stepsDone: 0,
+    sheetRows: [],
+    currentRow: 0,
   });
 
   divisorEl.textContent = String(state.divisor);
@@ -153,61 +206,41 @@ function startProblem() {
 }
 
 function checkStep() {
-  const qDigit = Number(qDigitInput.value);
-  const product = Number(productInput.value);
-  const remainderStep = Number(remainderStepInput.value);
-
-  if (Number.isNaN(qDigit) || Number.isNaN(product) || Number.isNaN(remainderStep)) {
-    setFeedback('Vul quotiëntcijfer, tussenproduct en aftrekking in.', 'warn');
+  if (state.currentRow >= state.sheetRows.length) {
+    setFeedback('Alles is al ingevuld. Kies “Nieuwe som”.', 'ok');
     return;
   }
 
-  if (qDigit !== state.expectedDigit) {
-    setFeedback(`Let op: ${state.divisor} past ${state.expectedDigit} keer in ${state.currentChunk}.`, 'warn');
+  const expectedRow = state.sheetRows[state.currentRow];
+  const rowInputs = Array.from(divisionSheetEl.querySelectorAll(`input.sheet-input[data-row="${state.currentRow}"]`));
+
+  if (!rowInputs.length) {
+    setFeedback('Kon de actieve rij niet vinden. Start een nieuwe som.', 'warn');
     return;
   }
 
-  const expectedProduct = state.expectedDigit * state.divisor;
-  if (product !== expectedProduct) {
-    setFeedback(`Je quotiënt klopt, maar het tussenproduct moet ${expectedProduct} zijn.`, 'warn');
+  const typedRow = rowInputs.map((input) => input.value.trim());
+  const hasMissing = expectedRow.some((digit, idx) => digit && !typedRow[idx]);
+  if (hasMissing) {
+    setFeedback('Vul eerst alle benodigde vakjes in deze rij in.', 'warn');
     return;
   }
 
-  const expectedRemainder = state.currentChunk - expectedProduct;
-  if (remainderStep !== expectedRemainder) {
-    setFeedback(`Aftrekking opnieuw: ${state.currentChunk} - ${expectedProduct} = ${expectedRemainder}.`, 'warn');
+  const mismatchIndex = expectedRow.findIndex((digit, idx) => (digit || '') !== (typedRow[idx] || ''));
+  if (mismatchIndex !== -1) {
+    setFeedback(`Rij ${state.currentRow + 1} klopt nog niet. Controleer kolom ${mismatchIndex + 1}.`, 'warn');
     return;
   }
 
-  const digits = String(state.dividend).split('').map(Number);
-  let nextChunk = expectedRemainder;
-
-  if (state.index < digits.length) {
-    const expectedBringDown = digits[state.index];
-    const typedBringDown = Number(bringDownInput.value);
-
-    if (Number.isNaN(typedBringDown)) {
-      setFeedback('Je bent een stap vergeten: haal het volgende cijfer naar beneden.', 'warn');
-      return;
-    }
-
-    if (typedBringDown !== expectedBringDown) {
-      setFeedback(`Je haalt het verkeerde cijfer naar beneden. Het moet ${expectedBringDown} zijn.`, 'warn');
-      return;
-    }
-
-    nextChunk = expectedRemainder * 10 + expectedBringDown;
-    state.index += 1;
+  state.currentRow += 1;
+  if (state.currentRow >= state.sheetRows.length) {
+    state.totalCorrect += 1;
+    progressEl.textContent = `✅ Opgeloste sommen: ${state.totalCorrect} | Gebruikte hints: ${state.hintsUsed}`;
+    setFeedback('Perfect! Alle rijen zijn correct.', 'ok');
   } else {
-    state.index += 1;
+    setFeedback(`Top! Rij ${state.currentRow} is goed.`, 'ok');
   }
 
-  state.quotient += String(qDigit);
-  quotientEl.textContent = state.quotient;
-  state.currentChunk = nextChunk;
-  state.stepsDone += 1;
-  setFeedback('Top! Deze stap klopt.', 'ok');
-  resetStepFields();
   updatePrompt();
   renderClassicDivision();
 }
@@ -232,6 +265,25 @@ function showHint() {
   }
 
   setFeedback('Lichte hint: controleer of je quotiëntcijfer niet te groot is.', 'ok');
+}
+
+function setupSheetInputHandlers() {
+  divisionSheetEl.addEventListener('input', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || !target.classList.contains('sheet-input')) {
+      return;
+    }
+
+    target.value = target.value.replace(/\D/g, '').slice(0, 1);
+    if (!target.value) return;
+
+    const row = Number(target.dataset.row);
+    const col = Number(target.dataset.col);
+    const next = divisionSheetEl.querySelector(`input.sheet-input[data-row="${row}"][data-col="${col + 1}"]`);
+    if (next && !next.disabled) {
+      next.focus();
+    }
+  });
 }
 
 function setupKeypad() {
@@ -280,4 +332,5 @@ guidanceEl.addEventListener('change', () => {
 });
 
 setupKeypad();
+setupSheetInputHandlers();
 startProblem();
