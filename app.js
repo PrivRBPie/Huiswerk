@@ -10,8 +10,7 @@ const state = {
   guidance: 2,
   hintsUsed: 0,
   totalCorrect: 0,
-  sheetRows: [],
-  currentRow: 0,
+  currentStep: 0,
 };
 
 const divisorEl = document.getElementById('divisor');
@@ -29,6 +28,7 @@ const bringDownInput = document.getElementById('bring-down');
 const difficultyEl = document.getElementById('difficulty');
 const guidanceEl = document.getElementById('guidance');
 const divisionSheetEl = document.getElementById('division-sheet');
+const sheetStepLabelEl = document.getElementById('sheet-step-label');
 
 
 function buildClassicSteps(dividend, divisor) {
@@ -47,7 +47,9 @@ function buildClassicSteps(dividend, divisor) {
       steps.push({
         endIndex: i,
         current,
+        qDigit,
         product,
+        remainder: current - product,
       });
       remainder = current - product;
     } else {
@@ -86,35 +88,50 @@ function renderClassicDivision() {
   });
   header[2 + workCols] = '\\';
   const qStart = 3 + workCols;
-  String(model.quotient).split('').forEach((digit, idx) => {
-    header[qStart + idx] = digit;
+  model.steps.forEach((step, idx) => {
+    if (idx < state.currentStep) {
+      header[qStart + idx] = String(step.qDigit);
+    }
   });
   rows.push({ cells: header, work: false });
 
-  const expectedRows = [];
-  const renderedWorkRows = [];
+  const quotientInputRow = Array(totalCols).fill('');
+  rows.push({ cells: quotientInputRow, work: false, quotientInput: true });
 
-  model.steps.forEach((step, stepIndex) => {
-    if (stepIndex > 0) {
-      expectedRows.push(toWorkRow(step.current, step.endIndex, workCols));
+  model.steps.forEach((step, idx) => {
+    if (idx > 0) {
+      const currentCells = Array(totalCols).fill('');
+      if (idx <= state.currentStep) {
+        const currentRow = toWorkRow(step.current, step.endIndex, workCols);
+        currentRow.forEach((digit, col) => {
+          currentCells[2 + col] = digit;
+        });
+      }
+      rows.push({ cells: currentCells, work: true });
     }
-    expectedRows.push(toWorkRow(step.product, step.endIndex, workCols));
-  });
-  expectedRows.push(toWorkRow(model.remainder, model.digits.length - 1, workCols));
 
-  expectedRows.forEach((workRow, idx) => {
-    const row = Array(totalCols).fill('');
-    workRow.forEach((digit, col) => {
-      row[2 + col] = digit;
-    });
-    renderedWorkRows.push({ cells: row, work: true, rowIndex: idx });
-    if (idx < expectedRows.length - 1) {
-      renderedWorkRows.push({ cells: Array(totalCols).fill(''), work: true, separator: true });
+    const productCells = Array(totalCols).fill('');
+    if (idx <= state.currentStep) {
+      const productRow = toWorkRow(step.product, step.endIndex, workCols);
+      productRow.forEach((digit, col) => {
+        productCells[2 + col] = digit;
+      });
     }
-  });
+    rows.push({ cells: productCells, work: true });
 
-  rows.push(...renderedWorkRows);
-  state.sheetRows = expectedRows;
+    rows.push({ cells: Array(totalCols).fill(''), work: true, separator: true });
+
+    const remainderCells = Array(totalCols).fill('');
+    if (idx < state.currentStep) {
+      const remainderRow = toWorkRow(step.remainder, step.endIndex, workCols);
+      remainderRow.forEach((digit, col) => {
+        remainderCells[2 + col] = digit;
+      });
+    }
+    rows.push({ cells: remainderCells, work: true, remainderInput: idx === state.currentStep, stepIndex: idx, endIndex: step.endIndex });
+
+    rows.push({ cells: Array(totalCols).fill(''), work: true, separator: true });
+  });
 
   divisionSheetEl.innerHTML = rows
     .map((row) => {
@@ -122,6 +139,10 @@ function renderClassicDivision() {
         .map((value, colIndex) => {
           const isWorkCell = row.work && colIndex >= 2 && colIndex < 2 + workCols;
           const className = isWorkCell ? 'work' : (value === '/' || value === '\\' ? 'symbol' : '');
+          if (row.quotientInput && colIndex === qStart + state.currentStep && state.currentStep < model.steps.length) {
+            return `<td><input class="sheet-input" data-type="quotient" maxlength="1" /></td>`;
+          }
+
           if (!isWorkCell) {
             return `<td class="${className}">${value}</td>`;
           }
@@ -130,11 +151,16 @@ function renderClassicDivision() {
             return `<td class="${className}"></td>`;
           }
 
-          const col = colIndex - 2;
-          const solved = row.rowIndex < state.currentRow;
-          const active = row.rowIndex === state.currentRow;
-          const userValue = solved ? state.sheetRows[row.rowIndex][col] : '';
-          return `<td class="${className}"><input class="sheet-input" data-row="${row.rowIndex}" data-col="${col}" maxlength="1" value="${userValue}" ${active ? '' : 'disabled'} /></td>`;
+          if (!row.remainderInput) {
+            return `<td class="${className}">${value}</td>`;
+          }
+
+          const activeCol = row.endIndex;
+          if (colIndex - 2 === activeCol) {
+            return `<td class="${className}"><input class="sheet-input" data-type="remainder" data-step="${row.stepIndex}" maxlength="1" /></td>`;
+          }
+
+          return `<td class="${className}"></td>`;
         })
         .join('');
       return `<tr>${cells}</tr>`;
@@ -174,12 +200,15 @@ function setFeedback(text, type = 'warn') {
 }
 
 function updatePrompt() {
-  if (state.currentRow >= state.sheetRows.length) {
-    promptEl.textContent = 'Klaar! Alle rijen zijn correct ingevuld.';
+  const model = buildClassicSteps(state.dividend, state.divisor);
+  if (state.currentStep >= model.steps.length) {
+    promptEl.textContent = 'Klaar! Alle stappen zijn correct ingevuld.';
+    sheetStepLabelEl.textContent = `STEP ${model.steps.length}`;
     return;
   }
 
-  promptEl.textContent = `Vul rij ${state.currentRow + 1} in en klik op “Controleer rij”.`;
+  promptEl.textContent = `Stap ${state.currentStep + 1}: vul het quotiëntcijfer en de rest in, daarna “Controleer rij”.`;
+  sheetStepLabelEl.textContent = `STEP ${state.currentStep + 1}`;
 }
 
 function startProblem() {
@@ -192,8 +221,7 @@ function startProblem() {
     currentChunk: 0,
     expectedDigit: 0,
     stepsDone: 0,
-    sheetRows: [],
-    currentRow: 0,
+    currentStep: 0,
   });
 
   divisorEl.textContent = String(state.divisor);
@@ -206,39 +234,45 @@ function startProblem() {
 }
 
 function checkStep() {
-  if (state.currentRow >= state.sheetRows.length) {
+  const model = buildClassicSteps(state.dividend, state.divisor);
+  if (state.currentStep >= model.steps.length) {
     setFeedback('Alles is al ingevuld. Kies “Nieuwe som”.', 'ok');
     return;
   }
 
-  const expectedRow = state.sheetRows[state.currentRow];
-  const rowInputs = Array.from(divisionSheetEl.querySelectorAll(`input.sheet-input[data-row="${state.currentRow}"]`));
+  const qInput = divisionSheetEl.querySelector('input.sheet-input[data-type="quotient"]');
+  const rInput = divisionSheetEl.querySelector('input.sheet-input[data-type="remainder"]');
 
-  if (!rowInputs.length) {
-    setFeedback('Kon de actieve rij niet vinden. Start een nieuwe som.', 'warn');
+  if (!qInput || !rInput) {
+    setFeedback('Kon de actieve velden niet vinden. Start een nieuwe som.', 'warn');
     return;
   }
 
-  const typedRow = rowInputs.map((input) => input.value.trim());
-  const hasMissing = expectedRow.some((digit, idx) => digit && !typedRow[idx]);
-  if (hasMissing) {
-    setFeedback('Vul eerst alle benodigde vakjes in deze rij in.', 'warn');
+  const typedQ = qInput.value.trim();
+  const typedR = rInput.value.trim();
+  if (!typedQ || !typedR) {
+    setFeedback('Vul beide rode velden in voor deze stap.', 'warn');
     return;
   }
 
-  const mismatchIndex = expectedRow.findIndex((digit, idx) => (digit || '') !== (typedRow[idx] || ''));
-  if (mismatchIndex !== -1) {
-    setFeedback(`Rij ${state.currentRow + 1} klopt nog niet. Controleer kolom ${mismatchIndex + 1}.`, 'warn');
+  const expected = model.steps[state.currentStep];
+  if (Number(typedQ) !== expected.qDigit) {
+    setFeedback(`Quotiëntcijfer klopt niet. Voor stap ${state.currentStep + 1} moet dit ${expected.qDigit} zijn.`, 'warn');
     return;
   }
 
-  state.currentRow += 1;
-  if (state.currentRow >= state.sheetRows.length) {
+  if (Number(typedR) !== expected.remainder) {
+    setFeedback(`Rest klopt niet. Voor stap ${state.currentStep + 1} moet dit ${expected.remainder} zijn.`, 'warn');
+    return;
+  }
+
+  state.currentStep += 1;
+  if (state.currentStep >= model.steps.length) {
     state.totalCorrect += 1;
     progressEl.textContent = `✅ Opgeloste sommen: ${state.totalCorrect} | Gebruikte hints: ${state.hintsUsed}`;
-    setFeedback('Perfect! Alle rijen zijn correct.', 'ok');
+    setFeedback('Perfect! Alle stappen zijn correct.', 'ok');
   } else {
-    setFeedback(`Top! Rij ${state.currentRow} is goed.`, 'ok');
+    setFeedback(`Top! Stap ${state.currentStep} is goed.`, 'ok');
   }
 
   updatePrompt();
@@ -277,11 +311,9 @@ function setupSheetInputHandlers() {
     target.value = target.value.replace(/\D/g, '').slice(0, 1);
     if (!target.value) return;
 
-    const row = Number(target.dataset.row);
-    const col = Number(target.dataset.col);
-    const next = divisionSheetEl.querySelector(`input.sheet-input[data-row="${row}"][data-col="${col + 1}"]`);
-    if (next && !next.disabled) {
-      next.focus();
+    if (target.dataset.type === 'quotient') {
+      const remainderInput = divisionSheetEl.querySelector('input.sheet-input[data-type="remainder"]');
+      if (remainderInput) remainderInput.focus();
     }
   });
 }
