@@ -26,18 +26,14 @@ const bringDownInput = document.getElementById('bring-down');
 
 const difficultyEl = document.getElementById('difficulty');
 const guidanceEl = document.getElementById('guidance');
-const classicDivisorEl = document.getElementById('classic-divisor');
-const classicDividendEl = document.getElementById('classic-dividend');
-const classicQuotientEl = document.getElementById('classic-quotient');
-const classicStepsEl = document.getElementById('classic-steps');
+const divisionSheetEl = document.getElementById('division-sheet');
 
 
 function buildClassicSteps(dividend, divisor) {
   const digits = String(dividend).split('').map(Number);
-  const quotient = Math.floor(dividend / divisor).toString();
   let remainder = 0;
   let started = false;
-  const lines = [];
+  const steps = [];
 
   for (let i = 0; i < digits.length; i += 1) {
     const current = remainder * 10 + digits[i];
@@ -46,32 +42,81 @@ function buildClassicSteps(dividend, divisor) {
     if (qDigit > 0 || started || i === digits.length - 1) {
       started = true;
       const product = qDigit * divisor;
-      const currentStr = String(current);
-      const productStr = String(product);
-      const indent = ' '.repeat(Math.max(0, i + 1));
-      lines.push(`${indent}${productStr}`);
-      lines.push(`${indent}${'-'.repeat(Math.max(currentStr.length, productStr.length))}`);
+      steps.push({
+        endIndex: i,
+        current,
+        product,
+      });
       remainder = current - product;
-
-      if (i < digits.length - 1) {
-        lines.push(`${indent}${remainder}${digits[i + 1]}`);
-      } else {
-        lines.push(`${indent}${remainder}`);
-      }
     } else {
       remainder = current;
     }
   }
 
-  return { quotient, lines: lines.join('\n') };
+  return {
+    digits,
+    quotient: Math.floor(dividend / divisor).toString(),
+    steps,
+    remainder,
+  };
 }
 
 function renderClassicDivision() {
-  const { quotient, lines } = buildClassicSteps(state.dividend, state.divisor);
-  classicDivisorEl.textContent = String(state.divisor);
-  classicDividendEl.textContent = String(state.dividend);
-  classicQuotientEl.textContent = quotient;
-  classicStepsEl.textContent = lines;
+  const model = buildClassicSteps(state.dividend, state.divisor);
+  const quotientCols = Math.max(3, String(state.dividend).length + 1);
+  const workCols = model.digits.length;
+  const totalCols = 2 + workCols + 1 + quotientCols;
+
+  const rows = [];
+  const header = Array(totalCols).fill('');
+  header[0] = String(state.divisor);
+  header[1] = '/';
+  model.digits.forEach((digit, idx) => {
+    header[2 + idx] = String(digit);
+  });
+  header[2 + workCols] = '\\';
+  const qStart = 3 + workCols;
+  String(model.quotient).split('').forEach((digit, idx) => {
+    header[qStart + idx] = digit;
+  });
+  rows.push({ cells: header, work: false });
+
+  model.steps.forEach((step, stepIndex) => {
+    if (stepIndex > 0) {
+      const currentRow = Array(totalCols).fill('');
+      String(step.current).split('').forEach((digit, idx, arr) => {
+        currentRow[2 + step.endIndex - (arr.length - 1 - idx)] = digit;
+      });
+      rows.push({ cells: currentRow, work: true });
+    }
+
+    const productRow = Array(totalCols).fill('');
+    String(step.product).split('').forEach((digit, idx, arr) => {
+      productRow[2 + step.endIndex - (arr.length - 1 - idx)] = digit;
+    });
+    rows.push({ cells: productRow, work: true });
+    rows.push({ cells: Array(totalCols).fill(''), work: true });
+  });
+
+  const finalRow = Array(totalCols).fill('');
+  const finalRemainder = String(model.remainder);
+  finalRemainder.split('').forEach((digit, idx, arr) => {
+    finalRow[2 + model.digits.length - 1 - (arr.length - 1 - idx)] = digit;
+  });
+  rows.push({ cells: finalRow, work: true });
+
+  divisionSheetEl.innerHTML = rows
+    .map((row) => {
+      const cells = row.cells
+        .map((value, colIndex) => {
+          const isWorkCell = row.work && colIndex >= 2 && colIndex < 2 + workCols;
+          const className = isWorkCell ? 'work' : (value === '/' || value === '\\' ? 'symbol' : '');
+          return `<td class="${className}">${value}</td>`;
+        })
+        .join('');
+      return `<tr>${cells}</tr>`;
+    })
+    .join('');
 }
 
 function randomInt(min, max) {
