@@ -176,33 +176,20 @@ button {
   color: #0f172a;
 }
 .division-sheet {
-  border-collapse: collapse;
   margin: 0 auto;
 }
 
-.division-sheet td {
-  width: 34px;
-  height: 32px;
-  text-align: left;
-  vertical-align: middle;
-  padding-left: 6px;
-  font-size: 1.55rem;
-  color: #111827;
-}
-
-.division-sheet td.work {
-  border: 1px solid #111827;
-}
-
 .sheet-input {
-  width: 100%;
-  height: 100%;
+  width: 32px;
+  height: 32px;
   border: 0;
-  background: transparent;
+  background: #e0e7ff;
   font: inherit;
   color: inherit;
-  text-align: left;
+  text-align: center;
   padding: 0;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 2px #818cf8;
 }
 
 .sheet-input[data-type] {
@@ -218,9 +205,67 @@ button {
   color: #111827;
 }
 
-.division-sheet td.symbol {
-  text-align: center;
-  padding-left: 0;
+.division-visual {
+  width: min(420px, 100%);
+  margin: 0 auto;
+  color: #37306b;
+}
+
+.quotient-row,
+.work-row .boxes {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.quotient-row { margin: 2px 0 6px; }
+
+.main-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.dividend-visual { letter-spacing: 4px; }
+
+.top-line,
+.work-line {
+  border-top: 3px solid #4c51bf;
+  margin: 4px 0 6px 64px;
+}
+
+.work-step { margin-left: 64px; }
+
+.work-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.work-row.minus {
+  color: #4338ca;
+}
+
+.box {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #c7d2fe;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.box.filled {
+  background: #a5b4fc;
+}
+
+.box.active {
+  background: #fde7df;
 }
 
 .division-layout {
@@ -336,12 +381,13 @@ button {
 
 @media (max-width: 680px) {
   .classic-division { max-width: 100%; }
-  .division-sheet td {
+  .division-visual { width: 100%; }
+  .box,
+  .sheet-input {
     width: 28px;
     height: 28px;
-    font-size: 1.25rem;
-    padding-left: 4px;
   }
+  .main-row { font-size: 1.55rem; }
 
   .division-layout { font-size: 1.8rem; }
   .topbar { flex-direction: column; align-items: stretch; }

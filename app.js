@@ -65,112 +65,61 @@ function buildClassicSteps(dividend, divisor) {
   };
 }
 
-function toWorkRow(value, endIndex, workCols) {
-  const row = Array(workCols).fill('');
-  String(value).split('').forEach((digit, idx, arr) => {
-    row[endIndex - (arr.length - 1 - idx)] = digit;
-  });
-  return row;
-}
-
 function renderClassicDivision() {
   const model = buildClassicSteps(state.dividend, state.divisor);
-  const quotientCols = Math.max(3, String(state.dividend).length + 1);
-  const workCols = model.digits.length;
-  const totalCols = 2 + workCols + 1 + quotientCols;
+  const dividendDisplay = model.digits.join(' · ');
 
-  const rows = [];
-  const header = Array(totalCols).fill('');
-  header[0] = String(state.divisor);
-  header[1] = '/';
-  model.digits.forEach((digit, idx) => {
-    header[2 + idx] = String(digit);
-  });
-  header[2 + workCols] = '\\';
-  const qStart = 3 + workCols;
-  model.steps.forEach((step, idx) => {
-    if (idx < state.currentStep) {
-      header[qStart + idx] = String(step.qDigit);
-    }
-  });
-  rows.push({ cells: header, work: false });
-
-  const quotientInputRow = Array(totalCols).fill('');
-  rows.push({ cells: quotientInputRow, work: false, quotientInput: true });
-
-  model.steps.forEach((step, idx) => {
-    if (idx > 0) {
-      const currentCells = Array(totalCols).fill('');
-      if (idx <= state.currentStep) {
-        const currentRow = toWorkRow(step.current, step.endIndex, workCols);
-        currentRow.forEach((digit, col) => {
-          currentCells[2 + col] = digit;
-        });
+  const quotientBoxes = model.steps
+    .map((step, idx) => {
+      if (idx < state.currentStep) {
+        return `<span class="box filled">${step.qDigit}</span>`;
       }
-      rows.push({ cells: currentCells, work: true });
-    }
-
-    const productCells = Array(totalCols).fill('');
-    if (idx <= state.currentStep) {
-      const productRow = toWorkRow(step.product, step.endIndex, workCols);
-      productRow.forEach((digit, col) => {
-        productCells[2 + col] = digit;
-      });
-    }
-    rows.push({ cells: productCells, work: true });
-
-    rows.push({ cells: Array(totalCols).fill(''), work: true, separator: true });
-
-    const remainderCells = Array(totalCols).fill('');
-    if (idx < state.currentStep) {
-      const remainderRow = toWorkRow(step.remainder, step.endIndex, workCols);
-      remainderRow.forEach((digit, col) => {
-        remainderCells[2 + col] = digit;
-      });
-    }
-    rows.push({ cells: remainderCells, work: true, remainderInput: idx === state.currentStep, stepIndex: idx, endIndex: step.endIndex });
-
-    rows.push({ cells: Array(totalCols).fill(''), work: true, separator: true });
-  });
-
-  divisionSheetEl.innerHTML = rows
-    .map((row) => {
-      const cells = row.cells
-        .map((value, colIndex) => {
-          const isWorkCell = row.work && colIndex >= 2 && colIndex < 2 + workCols;
-          const className = isWorkCell ? 'work' : (value === '/' || value === '\\' ? 'symbol' : '');
-          if (row.quotientInput && colIndex === qStart + state.currentStep && state.currentStep < model.steps.length) {
-            return `<td><input class="sheet-input" data-type="quotient" maxlength="1" /></td>`;
-          }
-
-          if (!isWorkCell) {
-            return `<td class="${className}">${value}</td>`;
-          }
-
-          if (row.separator) {
-            return `<td class="${className}"></td>`;
-          }
-
-          if (!row.remainderInput) {
-            return `<td class="${className}">${value}</td>`;
-          }
-
-          const activeCol = row.endIndex;
-          if (colIndex - 2 === activeCol) {
-            return `<td class="${className}"><input class="sheet-input" data-type="remainder" data-step="${row.stepIndex}" maxlength="1" /></td>`;
-          }
-
-          return `<td class="${className}"></td>`;
-        })
-        .join('');
-      return `<tr>${cells}</tr>`;
+      if (idx === state.currentStep) {
+        return '<input class="sheet-input box active" data-type="quotient" maxlength="1" />';
+      }
+      return '<span class="box"></span>';
     })
     .join('');
 
-  const firstActive = divisionSheetEl.querySelector('input.sheet-input:not([disabled])');
-  if (firstActive) {
-    firstActive.focus();
-  }
+  const workRows = model.steps
+    .map((step, idx) => {
+      const showStep = idx <= state.currentStep;
+      const product = showStep ? String(step.product).split('').map((d) => `<span class="box filled">${d}</span>`).join('') : '<span class="box"></span><span class="box"></span>';
+
+      let remainder;
+      if (idx < state.currentStep) {
+        remainder = String(step.remainder).split('').map((d) => `<span class="box filled">${d}</span>`).join('');
+      } else if (idx === state.currentStep) {
+        remainder = '<input class="sheet-input box active" data-type="remainder" maxlength="1" />';
+      } else {
+        remainder = '<span class="box"></span>';
+      }
+
+      return `
+        <div class="work-step">
+          <div class="work-row minus">- <div class="boxes">${product}</div></div>
+          <div class="work-line"></div>
+          <div class="work-row"><div class="boxes">${remainder}</div></div>
+        </div>
+      `;
+    })
+    .join('');
+
+  divisionSheetEl.innerHTML = `
+    <div class="division-visual">
+      <div class="quotient-row">${quotientBoxes}</div>
+      <div class="main-row">
+        <span class="divisor-visual">${state.divisor}</span>
+        <span class="bracket">)</span>
+        <span class="dividend-visual">${dividendDisplay}</span>
+      </div>
+      <div class="top-line"></div>
+      ${workRows}
+    </div>
+  `;
+
+  const firstActive = divisionSheetEl.querySelector('input.sheet-input');
+  if (firstActive) firstActive.focus();
 }
 
 function randomInt(min, max) {
