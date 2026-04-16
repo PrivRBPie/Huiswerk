@@ -60,20 +60,18 @@
           <div class="divisor" id="divisor">4</div>
           <div class="bar"></div>
           <div class="dividend" id="dividend">132</div>
-          <div class="quotient-right" id="quotient-right">?</div>
+          <div class="quotient-right">
+            <span id="quotient-right">?</span>
+            <input inputmode="numeric" pattern="[0-9]*" id="q-digit" maxlength="1" aria-label="Quotiëntcijfer in de staartdeling" />
+          </div>
+          <div class="under-dividend">
+            <input inputmode="numeric" pattern="[0-9]*" id="product" maxlength="4" aria-label="Tussenproduct onder het deelcijfer" />
+          </div>
         </div>
 
         <div id="step-prompt" class="prompt"></div>
 
         <div class="inputs">
-          <label>
-            Quotiëntcijfer
-            <input inputmode="numeric" pattern="[0-9]*" id="q-digit" maxlength="1" />
-          </label>
-          <label>
-            Tussenproduct
-            <input inputmode="numeric" pattern="[0-9]*" id="product" maxlength="4" />
-          </label>
           <label>
             Aftrekking (rest van deze stap)
             <input inputmode="numeric" pattern="[0-9]*" id="remainder-step" maxlength="4" />

@@ -191,15 +191,22 @@ button {
 }
 
 .division-layout {
-  display: none;
+  display: grid;
   grid-template-columns: auto 8px auto auto;
-  align-items: center;
+  grid-template-areas:
+    "divisor bar dividend quotient"
+    ". . product .";
+  align-items: end;
   gap: 8px;
   font-size: 2.25rem;
   font-weight: 900;
   justify-content: center;
   margin-top: 10px;
 }
+
+.divisor { grid-area: divisor; }
+.bar { grid-area: bar; }
+.dividend { grid-area: dividend; }
 
 .bar {
   width: 8px;
@@ -209,9 +216,35 @@ button {
 }
 
 .quotient-right {
+  grid-area: quotient;
   color: #9333ea;
-  min-width: 56px;
+  min-width: 120px;
   text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quotient-right input,
+.under-dividend input {
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  font-weight: 800;
+  text-align: center;
+  padding: 4px 6px;
+  min-height: 44px;
+}
+
+.quotient-right input {
+  width: 52px;
+}
+
+.under-dividend {
+  grid-area: product;
+  justify-self: start;
+}
+
+.under-dividend input {
+  width: 110px;
 }
 
 .prompt {
@@ -227,7 +260,7 @@ button {
 .inputs {
   margin-top: 10px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 8px;
 }
 
